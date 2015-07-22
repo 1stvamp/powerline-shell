@@ -5,24 +5,30 @@ def get_bzr_status():
     has_modified_files = False
     has_untracked_files = False
     has_missing_files = False
-    output = subprocess.Popen(['bzr', 'status'],
+    output = subprocess.Popen(['bzr', 'status', '--no-pending', '-S'],
             stdout=subprocess.PIPE).communicate()[0]
-    if 'unknown:\n' in output:
+    if '? ' in output:
         has_untracked_files = True
-    elif 'removed:\n' in output:
+    elif any(i in output for i in (' D ', '!', 'C  ')):
         has_missing_files = True
-    elif 'modified:\n' in output:
+    elif any(i in output for i in (' M ', '+', 'R  ')):
         has_modified_files = True
     return has_modified_files, has_untracked_files, has_missing_files
 
 def add_bzr_segment():
-    branches = os.popen('bzr branches 2> /dev/null').readlines()
-    if len(branches) == 0:
+    child = subprocess.Popen(['bzr', 'revno'], stdout=subprocess.PIPE)
+    streamdata = child.communicate()[0]
+    if child.returncode != 0:
         return False
+
     branch = ''
-    for line in branches:
-        if line[0] == '*':
-            branch = line[2:-1]
+    filename = '.bzr/branch/location'
+    for base_path in ('.', '..', '../..'):
+        file_path = os.path.join(base_path, filename)
+        if not os.path.isfile(file_path):
+            continue
+        with open(file_path) as f:
+            branch = os.path.basename(f.read().rstrip('/'))
 
     bg = Color.REPO_CLEAN_BG
     fg = Color.REPO_CLEAN_FG
