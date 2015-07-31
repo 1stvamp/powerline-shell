@@ -21,7 +21,7 @@ def add_bzr_segment():
     if child.returncode != 0:
         return False
 
-    branch = ''
+    branch = '(bzr)'
     filename = '.bzr/branch/location'
     for base_path in ('.', '..', '../..'):
         file_path = os.path.join(base_path, filename)
